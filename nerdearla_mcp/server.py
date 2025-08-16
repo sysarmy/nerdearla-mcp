@@ -37,33 +37,11 @@ async def fetch_speakers_from_api() -> List[Dict[str, Any]]:
             raise Exception(f"Failed to fetch speakers from API: {e}") from e
 
 
-def _extract_text_from_object(obj: Any) -> str:
-    """
-    Recursively extract text from nested objects.
-    
-    Args:
-        obj: Object to extract text from (dict, list, or primitive)
-
-    Returns:
-        String representation of all text content
-    """
-    text_parts = []
-    
-    if isinstance(obj, dict):
-        for value in obj.values():
-            text_parts.append(_extract_text_from_object(value))
-    elif isinstance(obj, list):
-        for item in obj:
-            text_parts.append(_extract_text_from_object(item))
-    elif obj is not None:
-        text_parts.append(str(obj))
-    
-    return " ".join(text_parts)
-
 
 @mcp.tool()
 async def get_speakers(
-    q: Annotated[str | None, "Optional search query to filter speakers across all fields (case-insensitive)"] = None,
+    q: Annotated[str | None, "Optional search query to filter speakers by name, bio, and tagline (case-insensitive)"] = None,
+    only_top_speakers: Annotated[bool, "Whether to return only top speakers"] = False,
 ) -> List[Dict[str, Any]]:
     """
     Get information about Nerdearla speakers.
@@ -72,14 +50,26 @@ async def get_speakers(
         # Fetch speakers from API
         speakers = await fetch_speakers_from_api()
         
-        # Apply search filter if provided
+        # Apply filters if provided
+        if only_top_speakers:
+            speakers = [
+                speaker for speaker in speakers
+                if speaker.get("isTopSpeaker", False) == True
+            ]
+        
         if q:
+            # Trim whitespace from query
+            q = q.strip()
+            
             # Create regex pattern for whole word matching (case-insensitive)
             query_pattern = re.compile(r'\b' + re.escape(q) + r'\b', re.IGNORECASE)
             
             speakers = [
                 speaker for speaker in speakers
-                if query_pattern.search(_extract_text_from_object(speaker))
+                if any(
+                    query_pattern.search(str(speaker.get(field, "")))
+                    for field in ["fullName", "bio", "tagLine"]
+                )
             ]
         
         return speakers
