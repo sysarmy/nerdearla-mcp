@@ -1,0 +1,12 @@
+services:
+  nerdearla-mcp:
+    build: .
+    restart: unless-stopped
+    networks:
+      - default
+      - cloudflare
+
+networks:
+  default:
+  cloudflare:
+    external: true
