@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nerdearla-mcp"
+version = "0.1.0"
+description = "MCP server for Nerdearla"
+authors = [
+    {name = "Guido de Caso", email = "gdecaso@gmail.com"},
+]
+dependencies = [
+    "fastmcp>=2.11.3",
+    "uvicorn>=0.30.0",
+    "pydantic>=2.0.0",
+    "httpx>=0.25.0",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "CC0-1.0"}
+
+[project.scripts]
+nerdearla-mcp = "nerdearla_mcp.server:run_server"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
