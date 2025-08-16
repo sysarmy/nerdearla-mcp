@@ -96,14 +96,16 @@ uv run ruff check .
 
 ## Configuration
 
-The server runs on port 8000 by default. You can modify the configuration in `nerdearla_mcp/server.py`:
+The server runs on port 8000 by default with streamable HTTP transport. You can modify the configuration in `nerdearla_mcp/server.py`:
 
 ```python
-uvicorn.run(
-    mcp.create_app(),
+await mcp.run_http_async(
+    transport="streamable-http",
     host="0.0.0.0",
     port=8000,  # Change this port if needed
-    log_level="info"
+    log_level="info",
+    path="/mcp",
+    stateless_http=True,
 )
 ```
 
