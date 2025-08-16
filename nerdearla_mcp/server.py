@@ -57,25 +57,58 @@ async def get_speakers(
                 if speaker.get("isTopSpeaker", False) == True
             ]
         
-        if q:
+        if q and q.lower() != "null":
             # Trim whitespace from query
             q = q.strip()
             
-            # Create regex pattern for whole word matching (case-insensitive)
-            query_pattern = re.compile(r'\b' + re.escape(q) + r'\b', re.IGNORECASE)
-            
-            speakers = [
-                speaker for speaker in speakers
-                if any(
-                    query_pattern.search(str(speaker.get(field, "")))
-                    for field in ["fullName", "bio", "tagLine"]
-                )
-            ]
+            # Skip if query becomes empty after trimming
+            if q:
+                # Create regex pattern for whole word matching (case-insensitive)
+                query_pattern = re.compile(r'\b' + re.escape(q) + r'\b', re.IGNORECASE)
+                
+                speakers = [
+                    speaker for speaker in speakers
+                    if any(
+                        query_pattern.search(str(speaker.get(field, "")))
+                        for field in ["fullName", "bio", "tagLine"]
+                    )
+                ]
         
-        return speakers
+        # Return only essential fields to reduce response size
+        return [
+            {
+                "id": speaker.get("id"),
+                "fullName": speaker.get("fullName"),
+                "isTopSpeaker": speaker.get("isTopSpeaker", False)
+            }
+            for speaker in speakers
+        ]
     
     except Exception as e:
         return [{"error": f"Failed to fetch speakers: {str(e)}"}]
+
+
+@mcp.tool()
+async def get_speaker_details(
+    speaker_id: Annotated[str, "Speaker ID to get detailed information for"]
+) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific Nerdearla speaker.
+    """
+    try:
+        # Fetch speakers from API
+        speakers = await fetch_speakers_from_api()
+        
+        # Find the speaker by ID
+        speaker = next((s for s in speakers if s.get("id") == speaker_id), None)
+        
+        if not speaker:
+            return {"error": f"Speaker with ID '{speaker_id}' not found"}
+        
+        return speaker
+    
+    except Exception as e:
+        return {"error": f"Failed to fetch speaker details: {str(e)}"}
 
 
 def run_server():
