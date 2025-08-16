@@ -11,8 +11,13 @@ from fastmcp import FastMCP
 import httpx
 import asyncio
 import re
+import os
 from datetime import datetime, date
 
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 # Sessionize API configuration
 SESSIONIZE_API_PREFIX = "https://sessionize.com/api/v2"
@@ -418,11 +423,14 @@ async def get_session_details(
 
 def run_server():
     """Main entry point for the MCP server."""
+    # Get port from environment variable with default fallback
+    port = int(os.getenv("PORT", "8000"))
+    
     async def _run():
         await mcp.run_http_async(
             transport="streamable-http",
             host="0.0.0.0",
-            port=8000,
+            port=port,
             log_level="info",
             path="/mcp",
             stateless_http=True,

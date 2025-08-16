@@ -96,18 +96,40 @@ uv run ruff check .
 
 ## Configuration
 
-The server runs on port 8000 by default with streamable HTTP transport. You can modify the configuration in `nerdearla_mcp/server.py`:
+### Port Configuration
 
-```python
-await mcp.run_http_async(
-    transport="streamable-http",
-    host="0.0.0.0",
-    port=8000,  # Change this port if needed
-    log_level="info",
-    path="/mcp",
-    stateless_http=True,
-)
+The server runs on port 8000 by default. You can configure the port using environment variables:
+
+**Environment Variable:**
+```bash
+export PORT=3000
+uv run nerdearla-mcp
 ```
+
+**Using .env file:**
+Create a `.env` file in the project root:
+```env
+PORT=3000
+```
+
+**Priority order:**
+1. Environment variable `PORT`
+2. `.env` file
+3. Default: 8000
+
+**Optional: Install dotenv support**
+```bash
+uv add python-dotenv
+```
+
+### Server Configuration
+
+The server uses streamable HTTP transport with the following default settings:
+- Host: `0.0.0.0` (accepts connections from any IP)
+- Port: as described above
+- Path: `/mcp` (API endpoint)
+- Transport: `streamable-http`
+- Mode: `stateless_http=True`
 
 ## Contributing
 
