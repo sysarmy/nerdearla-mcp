@@ -11,6 +11,4 @@ if [ $(git rev-list HEAD...origin/main --count) != 0 ]; then
     docker-compose build --no-cache
     docker-compose up -d
     echo "Deployment complete"
-else
-    echo "No changes"
 fi
