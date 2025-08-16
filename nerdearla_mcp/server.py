@@ -117,7 +117,7 @@ def get_nearest_event() -> str:
 
 
 @mcp.tool()
-async def list_events() -> List[Dict[str, Any]]:
+async def get_events() -> List[Dict[str, Any]]:
     """
     Get all Nerdearla events (historical, present, and future).
     """
@@ -141,26 +141,37 @@ async def list_events() -> List[Dict[str, Any]]:
     return events_list
 
 
-async def fetch_speakers_from_api(event_id: str) -> List[Dict[str, Any]]:
-    """
-    Fetch speakers data from Sessionize API for a specific event.
-    
-    Args:
-        event_id: Event ID to fetch speakers for
-    
-    Returns:
-        List of speaker data from the API
-    """
-    speakers_url = f"{SESSIONIZE_API_PREFIX}/{event_id}/view/Speakers"
-    
+async def fetch_from_sessionize_api(event_id: str, endpoint: str) -> Any:
+    """Fetch data from Sessionize API for a given event and endpoint."""
     async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(speakers_url)
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            raise Exception(f"Failed to fetch speakers from API for event {event_id}: {e}") from e
+        url = f"https://sessionize.com/api/v2/{event_id}/view/{endpoint}"
+        response = await client.get(url)
+        response.raise_for_status()
+        return response.json()
 
+
+async def fetch_and_flatten_sessions(event_id: str) -> List[Dict[str, Any]]:
+    """Fetch sessions from API and flatten them, with error handling for unavailable schedules."""
+    schedule_unavailable_msg = "Schedule will be available soon. Please check back later for session information."
+    
+    try:
+        session_groups = await fetch_from_sessionize_api(event_id, "Sessions")
+        # Flatten session groups to extract all sessions
+        sessions = []
+        for group in session_groups:
+            if "sessions" in group:
+                sessions.extend(group["sessions"])
+        
+        # Check if sessions list is empty (schedule not populated yet)
+        if not sessions:
+            raise ValueError(schedule_unavailable_msg)
+            
+        return sessions
+    except Exception as e:
+        # Handle case where schedule is not available yet
+        if "404" in str(e) or "not found" in str(e).lower():
+            raise ValueError(schedule_unavailable_msg)
+        raise e
 
 
 @mcp.tool()
@@ -181,7 +192,7 @@ async def get_speakers(
             return [{"error": f"Event '{selected_event_id}' not found"}]
         
         # Fetch speakers from API
-        speakers = await fetch_speakers_from_api(selected_event_id)
+        speakers = await fetch_from_sessionize_api(selected_event_id, "Speakers")
         
         # Apply filters if provided
         if only_top_speakers:
@@ -196,8 +207,8 @@ async def get_speakers(
             
             # Skip if query becomes empty after trimming
             if q:
-                # Create regex pattern for whole word matching (case-insensitive)
-                query_pattern = re.compile(r'\b' + re.escape(q) + r'\b', re.IGNORECASE)
+                # Create regex pattern for substring matching (case-insensitive)
+                query_pattern = re.compile(re.escape(q), re.IGNORECASE)
                 
                 speakers = [
                     speaker for speaker in speakers
@@ -238,7 +249,7 @@ async def get_speaker_details(
             return {"error": f"Event '{selected_event_id}' not found"}
         
         # Fetch speakers from API
-        speakers = await fetch_speakers_from_api(selected_event_id)
+        speakers = await fetch_from_sessionize_api(selected_event_id, "Speakers")
         
         # Find the speaker by ID
         speaker = next((s for s in speakers if s.get("id") == speaker_id), None)
@@ -250,6 +261,159 @@ async def get_speaker_details(
     
     except Exception as e:
         return {"error": f"Failed to fetch speaker details: {str(e)}"}
+
+
+@mcp.tool()
+async def get_sessions(
+    event_id: Annotated[str | None, "Event ID to get sessions for (defaults to nearest event)"] = None,
+    q: Annotated[str | None, "Optional search query to filter sessions by title, description, room, and speaker names (case-insensitive)"] = None,
+    only_plenum: Annotated[bool, "Whether to return only plenum sessions (keynotes)"] = False,
+    start_time: Annotated[str | None, "Optional start timestamp filter (ISO format with timezone, e.g., '2024-04-11T09:00:00-03:00' or '2024-04-11T09:00:00Z')"] = None,
+    end_time: Annotated[str | None, "Optional end timestamp filter (ISO format with timezone, e.g., '2024-04-11T12:00:00-03:00' or '2024-04-11T12:00:00Z')"] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Get information about Nerdearla sessions.
+    """
+    try:
+        # Determine which event to use
+        selected_event_id = event_id if event_id else get_nearest_event()
+        
+        # Validate event exists
+        if selected_event_id not in EVENTS:
+            return [{"error": f"Event '{selected_event_id}' not found"}]
+        
+        # Fetch sessions from API
+        try:
+            sessions = await fetch_and_flatten_sessions(selected_event_id)
+        except ValueError as e:
+            return [{"message": str(e)}]
+        
+        
+        # Apply plenum filter if provided
+        if only_plenum:
+            sessions = [
+                session for session in sessions
+                if session.get("isPlenumSession", False) == True
+            ]
+        
+        # Apply timestamp filters if provided
+        if start_time or end_time:
+            filtered_sessions = []
+            
+            for session in sessions:
+                session_start = session.get("startsAt")
+                session_end = session.get("endsAt")
+                
+                if session_start:
+                    try:
+                        session_start_datetime = datetime.fromisoformat(session_start.replace('Z', '+00:00'))
+                        
+                        # Check start time filter (session must start at or after this time)
+                        if start_time:
+                            start_filter = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+                            if session_start_datetime < start_filter:
+                                continue
+                        
+                        # Check end time filter (session must end at or before this time)
+                        if end_time:
+                            end_filter = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
+                            if session_end:
+                                session_end_datetime = datetime.fromisoformat(session_end.replace('Z', '+00:00'))
+                                if session_end_datetime > end_filter:
+                                    continue
+                            else:
+                                # If no endsAt, fall back to startsAt comparison
+                                if session_start_datetime > end_filter:
+                                    continue
+                        
+                        filtered_sessions.append(session)
+                    except (ValueError, AttributeError):
+                        # Skip sessions with invalid timestamp formats
+                        continue
+            
+            sessions = filtered_sessions
+        
+        # Apply search query if provided
+        if q and q.lower() != "null":
+            # Trim whitespace from query
+            q = q.strip()
+            
+            # Skip if query becomes empty after trimming
+            if q:
+                # Create regex pattern for substring matching (case-insensitive)
+                query_pattern = re.compile(re.escape(q), re.IGNORECASE)
+                
+                filtered_sessions = []
+                for session in sessions:
+                    # Search in title, description, room
+                    searchable_fields = [
+                        session.get("title", ""),
+                        session.get("description", ""),
+                        session.get("room", "")
+                    ]
+                    
+                    # Search in speaker names
+                    speakers = session.get("speakers", [])
+                    for speaker in speakers:
+                        speaker_name = speaker.get("name", "")
+                        if speaker_name:  # Only add non-empty names
+                            searchable_fields.append(speaker_name)
+                    
+                    
+                    # Check if query matches any field (skip None/null values)
+                    if any(query_pattern.search(str(field)) for field in searchable_fields if field is not None):
+                        filtered_sessions.append(session)
+                
+                sessions = filtered_sessions
+        
+        # Return only essential fields to reduce response size
+        return [
+            {
+                "id": session.get("id"),
+                "title": session.get("title"),
+                "startsAt": session.get("startsAt"),
+                "speakers": [speaker.get("name") for speaker in session.get("speakers", [])],
+                "room": session.get("room")
+            }
+            for session in sessions
+        ]
+    
+    except Exception as e:
+        return [{"error": f"Failed to fetch sessions: {str(e)}"}]
+
+
+@mcp.tool()
+async def get_session_details(
+    session_id: Annotated[str, "Session ID to get detailed information for"],
+    event_id: Annotated[str | None, "Event ID to get session details for (defaults to nearest event)"] = None,
+) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific Nerdearla session.
+    """
+    try:
+        # Determine which event to use
+        selected_event_id = event_id if event_id else get_nearest_event()
+        
+        # Validate event exists
+        if selected_event_id not in EVENTS:
+            return {"error": f"Event '{selected_event_id}' not found"}
+        
+        # Fetch sessions from API
+        try:
+            sessions = await fetch_and_flatten_sessions(selected_event_id)
+        except ValueError as e:
+            return {"message": str(e)}
+        
+        # Find the session by ID
+        session = next((s for s in sessions if s.get("id") == session_id), None)
+        
+        if not session:
+            return {"error": f"Session with ID '{session_id}' not found"}
+        
+        return session
+    
+    except Exception as e:
+        return {"error": f"Failed to fetch session details: {str(e)}"}
 
 
 def run_server():
