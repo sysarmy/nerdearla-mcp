@@ -105,13 +105,28 @@ uv run pytest
 
 ### Code Formatting
 
-```bash
-# Format code with black
-uv run black .
+#### Pre-commit Hooks (Recommended)
 
-# Lint with ruff
-uv run ruff check .
+This project uses pre-commit hooks to automatically format and lint code before commits:
+
+**Install pre-commit hooks:**
+```bash
+# Install dependencies (includes pre-commit)
+uv sync
+
+# Install the git hooks
+uv run pre-commit install
 ```
+
+**Usage:**
+- Hooks run automatically on `git commit`
+- To run manually on all files: `uv run pre-commit run --all-files`
+- To skip hooks for a commit: `git commit --no-verify`
+
+The hooks will automatically:
+- Format code with Black
+- Lint and fix issues with Ruff
+- Format code with Ruff formatter
 
 ## Configuration
 
