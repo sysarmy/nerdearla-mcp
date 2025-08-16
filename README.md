@@ -21,7 +21,7 @@ You can now ask Copilot about Nerdearla events, speakers, and sessions!
 
 Most Agents/IDEs support MCP servers out of the box. Check your documentation for instructions on how to add a new server.
 
-## Installation
+## Local Developtment Setup
 
 This project uses [uv](https://github.com/astral-sh/uv) for dependency management. Make sure you have uv installed:
 
