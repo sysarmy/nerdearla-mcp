@@ -1,6 +1,25 @@
 # Nerdearla MCP Server
 
+🚀 **Live Server**: The server is running at https://mcp.nerdear.la/mcp
+
 An MCP (Model Context Protocol) server that provides information about Nerdearla events, speakers, and sessions. Built with FastMCP and supports streamable HTTP in stateless mode with JSON responses.
+
+## Quick Start - Add to VS Code Copilot
+
+To use this MCP server with VS Code Copilot:
+
+1. Open the command palette in VS Code (`Cmd+Shift+P` / `Ctrl+Shift+P`)
+2. Type "MCP: Add Server" and select it
+3. Select "HTTP" as the server type
+4. Enter the server URL: `https://mcp.nerdear.la/mcp`
+5. Give it a name, any name is fine
+6. Select if you want to save it in your user or workspace settings
+
+You can now ask Copilot about Nerdearla events, speakers, and sessions!
+
+## Quick Start - Add to your favourite Agent/IDE
+
+Most Agents/IDEs support MCP servers out of the box. Check your documentation for instructions on how to add a new server.
 
 ## Installation
 
@@ -116,11 +135,6 @@ PORT=3000
 1. Environment variable `PORT`
 2. `.env` file
 3. Default: 8000
-
-**Optional: Install dotenv support**
-```bash
-uv add python-dotenv
-```
 
 ### Server Configuration
 
