@@ -1,0 +1,8 @@
+# CODEOWNERS file for Nerdearla MCP Server
+# This file defines who needs to review specific files or directories
+
+nerdearla_mcp/ @gdecaso
+
+Dockerfile @nachichuri
+compose.yml @nachichuri
+deploy.sh @nachichuri
