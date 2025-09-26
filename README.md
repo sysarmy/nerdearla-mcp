@@ -17,6 +17,34 @@ To use this MCP server with VS Code Copilot:
 
 You can now ask Copilot about Nerdearla events, speakers, and sessions!
 
+
+## Add to Cursor IDE 
+
+To use this MCP server with Cursor:
+
+1. Open the command palette in Cursor (`Cmd+Shift+P` / `Ctrl+Shift+P`)
+2. Type "Open MCP settings" and select it
+3. Click on "New MCP Server" + icon.
+4. Paste the following configuration
+```
+{
+  "mcpServers": {
+    "nerdearla": {
+      "name": "nerdearla",
+      "version": "1.0",
+      "description": "Nerdearla is a tool that helps you find information about the nerdear.la community.",
+      "url": "https://mcp.nerdear.la/mcp",
+      "command": "npx",
+      "env:{},
+    }
+  }
+}
+```
+You can use cursor chat to ask about Nerdearla events, speakers, and sessions!
+
+
+
+
 ## Quick Start - Add to your favourite Agent/IDE
 
 Most Agents/IDEs support MCP servers out of the box. Check your documentation for instructions on how to add a new server.
