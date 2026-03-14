@@ -25,6 +25,30 @@ SESSIONIZE_API_PREFIX = "https://sessionize.com/api/v2"
 
 # Events configuration - sorted by start_date descending (newest first)
 EVENTS = {
+    "703n9ws8": {
+        "id": "703n9ws8",
+        "name": "Nerdearla Chile 2026",
+        "location": "Santiago, Chile",
+        "start_date": date(2026, 4, 16),
+        "end_date": date(2026, 4, 18),
+        "venue": {
+            "name": "Centro Gabriela Mistral",
+            "address": "Av. Alameda Libertador Bernardo O'Higgins 227, 8320275 Santiago, Región Metropolitana, Chile",
+            "google_maps_url": "https://maps.app.goo.gl/LJaJVYKD8vvz5aYP8",
+        },
+    },
+    "ffc0lxwj": {
+        "id": "ffc0lxwj",
+        "name": "Nerdearla España 2025",
+        "location": "Madrid, España",
+        "start_date": date(2025, 11, 13),
+        "end_date": date(2025, 11, 15),
+        "venue": {
+            "name": "La Nave",
+            "address": "C. Cifuentes, 5, Villaverde, 28021 Madrid, Spain",
+            "google_maps_url": "https://maps.app.goo.gl/jQofp3R8z44n7SxR7",
+        },
+    },
     "dhvawevf": {
         "id": "dhvawevf",
         "name": "Nerdearla Buenos Aires 2025",
